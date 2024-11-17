@@ -1,0 +1,35 @@
+name: Random Number Generator
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          mkdir -p history20/$(date +"%y/%m/%d")
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "FILE_PREFIX=m" >> $GITHUB_ENV
+          else
+            echo "FILE_PREFIX=" >> $GITHUB_ENV
+          fi
+      
+      - name: Generate random number
+        run: xxd -c 64 -l 1024 -p /dev/random > history20/$(date +"%y/%m/%d/")${FILE_PREFIX}$(date +"%H.txt")
+      
+      - name: Commit and push changes
+        run: |
+          git add history20
+          git commit -m "Add random number for $(date +"%Y-%m-%d %H:00") (${FILE_PREFIX:+manual trigger}${FILE_PREFIX:-scheduled})"
+          git push
