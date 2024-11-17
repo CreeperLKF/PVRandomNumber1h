@@ -24,14 +24,23 @@ jobs:
           else
             echo "FILE_PREFIX=" >> $GITHUB_ENV
           fi
+          echo "RELATIVE_PATH=history20/$(date +"%y/%m/%d/")${FILE_PREFIX}$(date +"%H.txt")" >> $GITHUB_ENV
       
       - name: Generate random number
-        run: xxd -c 64 -l 2048 -p /dev/random > history20/$(date +"%y/%m/%d/")${FILE_PREFIX}$(date +"%H.txt")
+        run: |
+          xxd -c 64 -l 2048 -p /dev/random > history20/$(date +"%y/%m/%d/")${FILE_PREFIX}$(date +"%H.txt")
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            ln -sf "$RELATIVE_PATH" current
+          fi
       
       - name: Commit and push changes
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add history20
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            git add history20 current
+          else
+            git add history20
+          fi
           git commit -m "Add random number for $(date +"%Y-%m-%d %H:00") (${FILE_PREFIX:+manual trigger}${FILE_PREFIX:-scheduled})"
           git push
